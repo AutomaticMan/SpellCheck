@@ -63,7 +63,7 @@ public class SpellCheck extends JFrame {
 	/**
 	 * Launching point for the application.
 	 */
-	public static void main(String[] args) {		
+	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
@@ -96,6 +96,8 @@ public class SpellCheck extends JFrame {
 		if(file.exists()) {
 			loadFile(dictionary, file);
 		}
+		
+		System.out.println(dictionary.toString());
 		
 		//Initialize Content Panel
 		contentPane = new JPanel();
@@ -252,9 +254,12 @@ public class SpellCheck extends JFrame {
 		btnAddWord.setText("Add Word to Dictionary");
 		btnAddWord.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String word = wordsNotAdded.get(wordIndex - 1);
+				String word = wordsNotAdded.get(--wordIndex);
+				wordsNotAdded.remove(word);
+				
 				dictionary.add(word);
 				wordsAdded.add(word);
+				
 				btnAddWord.setEnabled(false);	
 			}
 		});
@@ -366,7 +371,6 @@ public class SpellCheck extends JFrame {
 	private void loadFile(Document document, File file) {
 		try {
 			document.load(file);
-			System.out.println(document.toString());
 		}
 		catch(IOException e) {
 	    	error("Failed to load " + file.getAbsolutePath() + 

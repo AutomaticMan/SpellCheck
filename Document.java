@@ -1,4 +1,4 @@
-import java.util.ArrayList;
+import java.util.*;
 import java.io.*;
 
 /**
@@ -17,14 +17,25 @@ public class Document extends ArrayList<String> {
 	public boolean add(String newEntry) {
 		boolean result;
 		
-		if(contains(newEntry)) {
+		if(size() != 0 && contains(newEntry.toLowerCase())) {
 			result = false;
 		}
 		else {
-			result = super.add(newEntry);
+			result = super.add(newEntry.toLowerCase());
 		}
 		
 		return result;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder str = new StringBuilder();
+		
+		for(String word : this) {
+			str.append(word + '\n');
+		}
+		
+		return str.toString();
 	}
 	
 	/**
@@ -34,30 +45,22 @@ public class Document extends ArrayList<String> {
 	 * @throws IOException 
 	 */
 	public void load(File file) throws IOException {
-		final String DELIMITER = "\\s | *\\s";
+		final String DELIMITER = " *\\s";
 		
 		try {
 			FileReader fileReader = new FileReader(file);
-			BufferedReader bufferedReader = new BufferedReader(fileReader);
-			
-			String line = bufferedReader.readLine();
+			Scanner scanner = new Scanner(fileReader);
+			scanner.useDelimiter(DELIMITER);
 			
 			//For each line in file
-			while(line != null ) {
-				String[] words = line.split(DELIMITER);	
-				
+			while(scanner.hasNext()) {
 				//For each word on line
-				for(String word : words) {
-					word = trimWord(word);
-					if(!word.equals("")) {
-						add(word);
-					}
-				}
-				
-				line = bufferedReader.readLine();
+				String word = scanner.next();
+				word = trimWord(word);
+				add(word);
 			}
 			
-			bufferedReader.close();
+			scanner.close();
 			fileReader.close();
 		}
 		catch(IOException e) {
@@ -72,15 +75,21 @@ public class Document extends ArrayList<String> {
 	 * @throws IOException 
 	 */
 	public void save(File file) throws IOException {
-		
-		//save words
 		try {
 			if (!file.exists()) {
 				file.createNewFile();
 			}
+			
+			FileWriter fileWriter = new FileWriter(file);
+			BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+			
+			bufferedWriter.write(toString());
+			
+			bufferedWriter.close();
+			fileWriter.close();
 		}
-		catch (Exception IOException) {
-			throw IOException;
+		catch (IOException e) {
+			throw e;
 		}
 	}
 	
@@ -89,26 +98,15 @@ public class Document extends ArrayList<String> {
 	 * @param word- a string to be trimmed
 	 * @return string- a trimmed string.
 	 */
-	public static String trimWord(String word) {
+	private static String trimWord(String word) {
 		
-		//Remove an instance of a special char (separated by |) from end of word
-		final String TRIM = "(!|\\?|:|;|,|\\.)$";
+		//Remove an instance of a special char from end of word
+		final String TRIM = "\\W $";
 		
 		if(word != null) {
 			word = word.replaceAll(TRIM, "");
 		}
 		
 		return word;
-	}
-	
-	@Override
-	public String toString() {
-		String result = "";
-		
-		for(String word : this) {
-			result += word + '\n';
-		}
-		
-		return result;
 	}
 }
