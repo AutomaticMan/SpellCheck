@@ -12,10 +12,12 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.SwingConstants;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.*;
 
 /**
  * @author Jiongming Fan, John Gardiner, Kendall Hickie and Blake Thomson
@@ -24,27 +26,39 @@ import java.io.IOException;
  */
 public class SpellCheck extends JFrame {
 	
-	//Data
+	/*
+	 * Data
+	 */
 	public final static String DICTIONARY_LOCATION = "dictionary.txt";
-	private Dictionary dictionary;
+	private Document dictionary;
 	private Document document;
 	private Document wordsAdded;
 	private Document wordsNotAdded;
-	private int wordIndex;
+	private Iterator<String> currentWord;
 	
-	//JPanels
+	// To maintain a word count for the user
+	private int wordIndex;
+	private int wordCount;
+	
+	/*
+	 * JPanels Objects
+	 */
 	private JPanel contentPane;
 	private JPanel loadDocument;
 	private JPanel saveDocuments;
 	private JPanel displayResults;
 	
-	//Objects for LoadDocument
+	/*
+	 * Objects for LoadDocument
+	 */
 	private JLabel lblWelcomeTitle;
 	private JLabel lblSelect;
 	private JButton btnLoadFile;
 	private JButton btnClose;
 	
-	//Objects for DisplayResults
+	/* 
+	 * Objects for DisplayResults
+	 */
 	private JLabel lblWordTitle;
 	private JLabel lblWord;
 	private JLabel lblWordCountTitle;
@@ -53,12 +67,16 @@ public class SpellCheck extends JFrame {
 	private JButton btnAddWord;
 	private JButton btnDone;
 	
-	//Objects for SaveDocuments
+	/* 
+	 * Objects for SaveDocuments
+	 */
 	private JLabel lblSaveTitle;
 	private JLabel lblSaveAddedWords;
 	private JLabel lblSaveWordsNotAdded;
 	private JButton btnSaveWordsNotAdded;
 	private JButton btnSaveWordsAdded;
+	private JButton btnLoadFileSD;
+	private JButton btnCloseSD;
 	
 	/**
 	 * Launching point for the application.
@@ -77,27 +95,20 @@ public class SpellCheck extends JFrame {
 	}	
 	
 	/**
-	 * Class constructor initializes all objects, and calls methods to set-up Spell 
-	 * Check.
+	 * Class constructor initializes all objects, and calls methods to Setup 
+	 * Spell Check.
 	 */
 	public SpellCheck() {
-		
-		//Initialize Data
-		dictionary = new Dictionary();
-		document = new Document();
-		wordsAdded = new Document();
-		wordsNotAdded = new Document();
-		wordIndex = 0;
+		//Initialize Dictionary
+		dictionary = new Document();
 		
 		File file = new File(DICTIONARY_LOCATION);
 		
-		//Only load dictionary if it exists, otherwise the file will be created when user 
-		//adds words to the dictionary
+		//Only load dictionary if it exists, otherwise the file will be created
+		//when user adds words to the dictionary
 		if(file.exists()) {
 			loadFile(dictionary, file);
 		}
-		
-		System.out.println(dictionary.toString());
 		
 		//Initialize Content Panel
 		contentPane = new JPanel();
@@ -126,16 +137,36 @@ public class SpellCheck extends JFrame {
 		lblSaveAddedWords = new JLabel();
 		btnSaveWordsNotAdded = new JButton();
 		btnSaveWordsAdded = new JButton();
+		btnLoadFileSD = new JButton();
+		btnCloseSD = new JButton();
 		
-		//Set-up Panels
+		//Setup Panels
 		setupContentPane();
 		setupLoadDocumentPanel();
 		setupDisplayResultsPanel();
 		setupSaveDocumentsPanel();
 		
+		setupSpellCheck();
+		
 		//Show Panel
 		loadDocument.setVisible(true);
 	}
+	
+	/**
+     * Private method that handles setup of spell check for each document
+     * check that is performed.
+     */	
+	private void setupSpellCheck() {
+		//Initialize Document
+		document = new Document();
+		
+		loadDocument.setVisible(false);
+		displayResults.setVisible(false);
+		saveDocuments.setVisible(false);
+		
+		btnNextWord.setEnabled(true);
+	}
+	
 	
 	/**
      * Private method that handles setup of the content pane.
@@ -147,11 +178,11 @@ public class SpellCheck extends JFrame {
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
 		contentPane.setLayout(new CardLayout(0, 0));
-		
 	}
 	
 	/**
-     * Private method that handles setup of Swing components for the LoadDocument Panel.
+     * Private method that handles setup of Swing components for the 
+     * LoadDocument Panel.
      */
 	private void setupLoadDocumentPanel() {
 		
@@ -159,18 +190,18 @@ public class SpellCheck extends JFrame {
 		contentPane.add(loadDocument, "name_76583272863026");
 		loadDocument.setLayout(null);
 		
-		//Set-up Title Label
+		//Setup Title Label
 		lblWelcomeTitle.setText("Welcome to Spell Check");
 		lblWelcomeTitle.setBounds(90, 48, 214, 19);
 		lblWelcomeTitle.setFont(new Font("Dialog", Font.BOLD, 16));
 		loadDocument.add(lblWelcomeTitle);
 		
-		//Set-up Select File Label
+		//Setup Select File Label
 		lblSelect.setText("Select a file to load:");
 		lblSelect.setBounds(126, 132, 142, 15);
 		loadDocument.add(lblSelect);
 		
-		//Set-up Choose File Button
+		//Setup Choose File Button
 		btnLoadFile.setText("Choose File");
 		btnLoadFile.setBounds(139, 152, 116, 25);
 		btnLoadFile.addActionListener(new ActionListener() {
@@ -184,29 +215,32 @@ public class SpellCheck extends JFrame {
 		});
 		loadDocument.add(btnLoadFile);
 		
-		//Set-up Close Button
+		//Setup Close Button
 		btnClose.setText("Close");
 		btnClose.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				System.exit(0);
 			}
 		});
-		btnClose.setBounds(301, 223, 117, 25);
+		btnClose.setBounds(301, 223, 117, 25);	
 		loadDocument.add(btnClose);
 	}
 	
 	/**
-     * Private method that handles setup of Swing components for the DisplayResults Panel.
+     * Private method that handles setup of Swing components for the 
+     * DisplayResults Panel.
      */	
 	private void setupDisplayResultsPanel() {
 		
-		//Set-up Event Handler for DisplayResultsPanel Shown
+		//Setup Event Handler for DisplayResultsPanel Shown
 		displayResults.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentShown(ComponentEvent arg0) {
+				
+				//Run spell check and display results IFF found
 				spellCheck();
 				
-				if(wordsNotAdded.size() > 0) {
+				if(currentWord.hasNext()) {
 					nextWord();
 				}
 				else {
@@ -219,28 +253,28 @@ public class SpellCheck extends JFrame {
 		contentPane.add(displayResults, "name_76595257931342");
 		displayResults.setLayout(null);
 		
-		//Set-up Word Title Label
+		//Setup Word Title Label
 		lblWordTitle.setText("Word:");
 		lblWordTitle.setHorizontalAlignment(SwingConstants.LEFT);
 		lblWordTitle.setFont(new Font("Dialog", Font.BOLD, 16));
 		lblWordTitle.setBounds(20, 45, 70, 15);
 		displayResults.add(lblWordTitle);
 		
-		//Set-up Word Label- stores spell check results
+		//Setup Word Label- stores spell check results
 		lblWord.setFont(new Font("Dialog", Font.BOLD, 16));
 		lblWord.setBounds(79, 45, 339, 15);
 		displayResults.add(lblWord);
 		
-		//Set-up Word Count Title Label
+		//Setup Word Count Title Label
 		lblWordCountTitle.setText("Remaining Words:");
 		lblWordCountTitle.setBounds(242, 112, 129, 15);
 		displayResults.add(lblWordCountTitle);
 		
-		//Set-up Word Count Label
+		//Setup Word Count Label
 		lblWordCount.setBounds(376, 112, 42, 15);
 		displayResults.add(lblWordCount);
 		
-		//Set-up Next Word Button
+		//Setup Next Word Button
 		btnNextWord.setText("Next Word");
 		btnNextWord.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -250,28 +284,29 @@ public class SpellCheck extends JFrame {
 		btnNextWord.setBounds(242, 139, 108, 25);
 		displayResults.add(btnNextWord);
 		
-		//Set-up Add Word Button
+		//Setup Add Word Button
 		btnAddWord.setText("Add Word to Dictionary");
 		btnAddWord.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String word = wordsNotAdded.get(--wordIndex);
-				wordsNotAdded.remove(word);
+				String word = lblWord.getText();
 				
+				currentWord.remove();
 				dictionary.add(word);
 				wordsAdded.add(word);
 				
-				btnAddWord.setEnabled(false);	
+				btnAddWord.setEnabled(false);
 			}
 		});
 		btnAddWord.setBounds(20, 139, 198, 25);
 		displayResults.add(btnAddWord);
 		
-		//Set-up Done Button
+		//Setup Done Button
 		btnDone.setText("Done");
 		btnDone.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				
-				//If changes are made to the dictionary, then save them to hard storage
+			
+				//If changes are made to the dictionary, 
+				//then save them to hard storage
 				if(wordsAdded.size() > 0) {
 					File file = new File(DICTIONARY_LOCATION);
 					saveFile(dictionary, file);
@@ -287,7 +322,8 @@ public class SpellCheck extends JFrame {
 	}
 	
 	/**
-     * Private method that handles setup of Swing components for the SaveDocuments Panel.
+     * Private method that handles setup of Swing components for the 
+     * SaveDocuments Panel.
      */
 	private void setupSaveDocumentsPanel() {
 		
@@ -295,23 +331,24 @@ public class SpellCheck extends JFrame {
 		contentPane.add(saveDocuments, "name_76599778942302");
 		saveDocuments.setLayout(null);
 		
-		//Set-up Title Label
+		//Setup Title Label
 		lblSaveTitle.setText("Would you like to save your results?");
 		lblSaveTitle.setFont(new Font("Dialog", Font.BOLD, 16));
 		lblSaveTitle.setBounds(12, 12, 406, 15);
 		saveDocuments.add(lblSaveTitle);
 		
-		//Set-up Save Added Words Label
+		//Setup Save Added Words Label
 		lblSaveAddedWords.setText("Save a list of words added to dictionary:");
 		lblSaveAddedWords.setBounds(12, 60, 292, 15);
 		saveDocuments.add(lblSaveAddedWords);
 
-		//Set-up Save Words Not Added Label
-		lblSaveWordsNotAdded.setText("Save a list of words not added to dictionary:");
+		//Setup Save Words Not Added Label
+		lblSaveWordsNotAdded.setText("Save a list of words not added "
+			+ "to dictionary:");
 		lblSaveWordsNotAdded.setBounds(12, 123, 320, 15);
 		saveDocuments.add(lblSaveWordsNotAdded);
 		
-		//Set-up Save Words Button
+		//Setup Save Words Button
 		btnSaveWordsAdded.setText("Create File");
 		btnSaveWordsAdded.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -321,7 +358,7 @@ public class SpellCheck extends JFrame {
 		btnSaveWordsAdded.setBounds(22, 86, 117, 25);
 		saveDocuments.add(btnSaveWordsAdded);
 		
-		//Set-up Save Words Not Added Button
+		//Setup Save Words Not Added Button
 		btnSaveWordsNotAdded.setText("Create File");
 		btnSaveWordsNotAdded.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -331,42 +368,57 @@ public class SpellCheck extends JFrame {
 		btnSaveWordsNotAdded.setBounds(22, 150, 117, 25);
 		saveDocuments.add(btnSaveWordsNotAdded);
 				
-		//Set-up Close Button
-		btnClose.setText("Close");
-		btnClose.addActionListener(new ActionListener() {
+		//Setup Close Button
+		btnCloseSD.setText("Close");
+		btnCloseSD.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				System.exit(0);
 			}
 		});
-		btnClose.setBounds(301, 223, 117, 25);  
-		saveDocuments.add(btnClose);
+		btnCloseSD.setBounds(301, 223, 117, 25);  
+		saveDocuments.add(btnCloseSD);
+		
+		btnLoadFileSD.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				setupSpellCheck(); 
+				
+				chooseFile();
+				
+				//Display DisplayResults panel
+				loadDocument.setVisible(false);
+				displayResults.setVisible(true);    
+			}
+		});
+		btnLoadFileSD.setText("Load New FIle");
+		btnLoadFileSD.setBounds(156, 223, 133, 25);
+		saveDocuments.add(btnLoadFileSD);
 	}
 	
 	/**
-     * Private method chooses the next word from the wordNotAdded list, then displays 
-     * it to the user.
+     * Private method chooses the next word from the wordNotAdded list, 
+     * then displays it to the user.
      */
 	private void nextWord() {
-		if(wordIndex < wordsNotAdded.size()) {
-			
-			String word = wordsNotAdded.get(wordIndex++);
+		if(currentWord.hasNext()) {
+			String word = currentWord.next();
 			lblWord.setText(word);
 			
-			String wordCount = Integer.toString(wordsNotAdded.size() - wordIndex);
-			lblWordCount.setText(wordCount);
+			wordIndex++;
+			String count = Integer.toString(wordCount - wordIndex);
+			lblWordCount.setText(count);
 			
 			//Enable add word button for next word
 			btnAddWord.setEnabled(true);	
 			
-			//Disable next word button when no words remain in wordsNotAdded list
-			if(wordIndex == wordsNotAdded.size()) {
+			//Disable next word button when no words remain in wordsNotAdded
+			if(!currentWord.hasNext()) {
 				btnNextWord.setEnabled(false);	
 			}
 		}
 	}
-
+	
 	/**
-     * Private method that loads dictionary file, otherwise program terminates.
+     * Private method that loads document file, otherwise program terminates.
      */
 	private void loadFile(Document document, File file) {
 		try {
@@ -379,8 +431,8 @@ public class SpellCheck extends JFrame {
 	}
 	
 	/**
-     * Private method allows the user to save a file to a designated location.  The
-     * dictionary is saved to file, otherwise program terminates.
+     * Private method allows the user to save a file to a designated location.  
+     * The document is saved to file, otherwise program terminates.
      */	
 	private void saveFile(Document document, File file) {
 		try {
@@ -394,15 +446,15 @@ public class SpellCheck extends JFrame {
 	}
 	
 	/**
-     * Private method allows the user to create a new file.  The document is saved to file, 
-     * otherwise notify user.
+     * Private method allows the user to create a new file.  The document is 
+     * saved to file, otherwise notify user.
      */
 	private void createFile(Document document) {
 		JFileChooser fileChooser = new JFileChooser();
+		
 		fileChooser.setDialogTitle("Specify a file to save");    
 
 		int selection = fileChooser.showSaveDialog(saveDocuments);
-
 		if(selection == JFileChooser.APPROVE_OPTION) {
 		    File file = fileChooser.getSelectedFile();
 		    saveFile(document, file);
@@ -410,19 +462,23 @@ public class SpellCheck extends JFrame {
 	}
 	
 	/**
-     * Private method that displays load file option to the user.  The selected file is 
-     * loaded into the document list, otherwise program terminates.
+     * Private method that displays load file option to the user.  The selected 
+     * file is loaded into the document list, otherwise program terminates.
      */
 	private void chooseFile() {
 	    JFileChooser fileChooser = new JFileChooser();
-	     
-        fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+	    FileNameExtensionFilter filter = new FileNameExtensionFilter("Text", "txt", "text");
+	    
+	    fileChooser.setFileFilter(filter);
+		fileChooser.setDialogTitle("Specify a file to load");    
+        fileChooser.setCurrentDirectory(
+        	new File(System.getProperty("user.home")));
         
         int selection = fileChooser.showOpenDialog(loadDocument);
-        
         if (selection == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             loadFile(document, file);
+            document.trimPunctuation();	
         }
         else {
         	
@@ -432,8 +488,9 @@ public class SpellCheck extends JFrame {
 	}
 	
 	/**
-     * Private method handles graceful termination of the program if it encounters an 
-     * error.
+     * Private method handles graceful termination of the program if it 
+     * encounters an error.
+     * 
      * @param message- a string that will be displayed to the user
      */
 	private void error(String message) {
@@ -443,15 +500,22 @@ public class SpellCheck extends JFrame {
 	}
 	
 	/**
-     * Check the document list against the dictionary to determine if it contains any 
-     * unmatched words.  Words fitting this criteria are added to this wordsNotAdded
-     * list.
+     * Check the document list against the dictionary to determine if it 
+     * contains any unmatched words.  Words fitting this criteria are added 
+     * to the wordsNotAdded list.
      */
 	private void spellCheck() {
+		wordsAdded = new Document();
+		wordsNotAdded = new Document();
+		
 		for(String word : document) {
 			if(!dictionary.contains(word)) {
 				wordsNotAdded.add(word);   
 			}
 		}
+		
+		wordCount = wordsNotAdded.size();
+		currentWord = wordsNotAdded.iterator();
+		wordIndex = 0;
 	}
 }

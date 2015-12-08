@@ -4,44 +4,17 @@ import java.io.*;
 /**
  * @author Jiongming Fan, John Gardiner, Kendall Hickie and Blake Thomson
  * 
- * A Document object extends ArrayList and maintains a list of unique words.  Contains 
- * a method trimming trailing special characters from a word.
+ * A Document object extends TreeSet and adds features to specific to 
+ * a document.  
  */
-public class Document extends ArrayList<String> {
+public class Document extends TreeSet<String> {
 	
 	/**
-	 * Add a unique string to this list.
-	 * @param newEntry- a string to be added to this list
-	 */
-	@Override
-	public boolean add(String newEntry) {
-		boolean result;
-		
-		if(size() != 0 && contains(newEntry.toLowerCase())) {
-			result = false;
-		}
-		else {
-			result = super.add(newEntry.toLowerCase());
-		}
-		
-		return result;
-	}
-	
-	@Override
-	public String toString() {
-		StringBuilder str = new StringBuilder();
-		
-		for(String word : this) {
-			str.append(word + '\n');
-		}
-		
-		return str.toString();
-	}
-	
-	/**
-	 * Load words from a file into this list.  Throws I/O exception if the file cannot 
-	 * be read. 
-	 * @param file- a file to be read.
+	 * Load words from a file into this list.  Throws I/O exception if the file
+	 * cannot be read. 
+	 * 
+	 * @param file- a file to be read
+	 * 
 	 * @throws IOException 
 	 */
 	public void load(File file) throws IOException {
@@ -50,28 +23,24 @@ public class Document extends ArrayList<String> {
 		try {
 			FileReader fileReader = new FileReader(file);
 			Scanner scanner = new Scanner(fileReader);
-			scanner.useDelimiter(DELIMITER);
 			
-			//For each line in file
-			while(scanner.hasNext()) {
-				//For each word on line
-				String word = scanner.next();
-				word = trimWord(word);
-				add(word);
-			}
+			scanner.useDelimiter(DELIMITER);
+			scanner.forEachRemaining(word -> add(word.toLowerCase()));
 			
 			scanner.close();
 			fileReader.close();
 		}
 		catch(IOException e) {
 			throw e;
-		}
-		 
+		}	 
 	}
 	
 	/**
-	 * Save this list to a file.  Throws I/O exception if the file cannot be read.
-	 * @param file- a file to write to.
+	 * Save this list to a file.  Throws I/O exception if the file cannot 
+	 * be read.
+	 * 
+	 * @param file- a file to write to
+	 * 
 	 * @throws IOException 
 	 */
 	public void save(File file) throws IOException {
@@ -94,19 +63,58 @@ public class Document extends ArrayList<String> {
 	}
 	
 	/**
-	 * Trim any trailing special character from an input string.
+	 * Trim a leading or trailing special character from words in this set.
+	 * 
 	 * @param word- a string to be trimmed
-	 * @return string- a trimmed string.
+	 * 
+	 * @return string- a trimmed string
 	 */
-	private static String trimWord(String word) {
+	public void trimPunctuation() {
+		//Any special characters at beginning or end of word are trimmed.  This
+		//technique yielded the best results when testing actual text documents.
+		final String TRIM = "(^\\W*)|(\\W*$)";		
+		ArrayList<String> temp = new ArrayList<>();
 		
-		//Remove an instance of a special char from end of word
-		final String TRIM = "\\W $";
+		forEach(word -> temp.add(word.replaceAll(TRIM, "")));
 		
-		if(word != null) {
-			word = word.replaceAll(TRIM, "");
+		clear();
+		addAll(temp);
+	}
+	
+	/**
+	 * Overrides add method to ensure that empty strings are not added into the
+	 * document.
+	 * 
+	 * @param word- a string to be added to list
+	 * 
+	 * @return boolean- true if word was added, otherwise false
+	 */
+	@Override
+	public boolean add(String word) {
+		boolean result;
+		
+		if(word.equals("")) {
+			result = false;
+		}
+		else {
+			result = super.add(word);
 		}
 		
-		return word;
+		return result;
+	}
+	
+	/**
+	 * Returns a string representation of this set.
+	 * 
+	 * @return string- a list of words in the document
+	 */
+	@Override
+	public String toString() {
+		final String DELIMITER = "\n";
+		StringBuilder outputString = new StringBuilder();
+		
+		forEach(word -> outputString.append(word + DELIMITER));
+		
+		return outputString.toString();
 	}
 }
